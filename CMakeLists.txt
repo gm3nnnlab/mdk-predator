@@ -102,6 +102,8 @@ add_mdk_test(test_crypto_analyzer
 )
 
 # Integration tests
+# test_input_validation only uses inline functions from input_validation.h,
+# so no additional source files are required.
 add_executable(test_input_validation
     tests/integration/test_input_validation.c
 )
