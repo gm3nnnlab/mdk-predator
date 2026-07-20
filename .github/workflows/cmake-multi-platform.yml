@@ -4,9 +4,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ "feature/project-overhaul" ]
+    branches: [ "main", "develop", "feature/project-overhaul" ]
   pull_request:
-    branches: [ "feature/project-overhaul" ]
+    branches: [ "main", "develop", "feature/project-overhaul" ]
 
 jobs:
   build:
