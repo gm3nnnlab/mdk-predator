@@ -19,7 +19,7 @@ A comprehensive guide for AI assistants working on the MDK-Predator codebase. Th
 
 ## Project Structure
 
-```
+```text
 mdk-predator/
 ├── src/                          # Source code (C)
 │   ├── automotive/               # Automotive security modules
@@ -306,7 +306,7 @@ bool my_function(uint32_t frequency) {
 **Available validators:**
 - `validate_not_null(ptr)` - NULL check
 - `validate_frequency(freq)` - Frequency range validation
-- `validate_buffer_size(size)` - Buffer bounds
+- `validate_buffer_length(length, max_length)` - Buffer bounds check
 - `safe_memcpy(dst, dst_size, src, src_size)` - Safe memory copy
 
 ---
@@ -374,9 +374,10 @@ If you see a warning:
 
 ### Debug Output
 
-Use `printf()` for debugging (will be compiled out in release builds). For production:
+Use `printf()` for debugging. For production:
 - Remove debug prints before committing
-- Or use conditional compilation: `#ifdef DEBUG`
+- Or use conditional compilation with `#ifdef DEBUG` (ensure DEBUG is defined in your build flags if needed)
+- Note: The Makefile does not automatically strip debug output in release mode, so explicit removal or guards are required
 
 ### Platform-Specific Code
 
@@ -557,22 +558,40 @@ Use `input_validation.h` for all validation. Never trust external data.
 
 ### Test Structure
 
-Tests use a simple framework without external dependencies:
+Tests use custom assertion macros and a failure counter pattern:
 
 ```c
 #include <stdio.h>
-#include <assert.h>
 
-// Simple test
+/* Test counter */
+static int tests_passed = 0;
+static int tests_failed = 0;
+
+/* Test helper macros */
+#define TEST_ASSERT(condition, message) do { \
+    if (condition) { \
+        printf("  ✓ %s\n", message); \
+        tests_passed++; \
+    } else { \
+        printf("  ✗ %s\n", message); \
+        tests_failed++; \
+    } \
+} while(0)
+
+#define RUN_TEST(test_func) do { \
+    printf("\n[TEST] %s\n", #test_func); \
+    test_func(); \
+} while(0)
+
 void test_my_function(void) {
     int result = my_function(42);
-    assert(result == expected_value);
+    TEST_ASSERT(result == expected_value, "function returns correct value");
 }
 
 int main(void) {
-    test_my_function();
-    printf("All tests passed!\n");
-    return 0;  // Exit code 0 = success
+    RUN_TEST(test_my_function);
+    printf("Passed: %d, Failed: %d\n", tests_passed, tests_failed);
+    return tests_failed > 0 ? 1 : 0;  // Exit code 0 = success
 }
 ```
 
