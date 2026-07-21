@@ -16,6 +16,8 @@ jobs:
   build-ppma:
     name: Build mdk_predator.ppma
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed to create GitHub Releases and upload assets
 
     steps:
       - name: Checkout MDK-Predator
@@ -74,7 +76,7 @@ jobs:
           EXTCMAKE="$MAYHEM/firmware/application/external/external.cmake"
           cat >> "$EXTCMAKE" << 'EOF'
 
-          #mdk_predator
+          # mdk_predator
           list(APPEND EXTCPPSRC
               external/mdk_predator/main.cpp
               external/mdk_predator/mdk_predator_app.cpp
