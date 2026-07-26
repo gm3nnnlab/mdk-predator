@@ -1,0 +1,152 @@
+name: Build and Release .ppma
+
+# Trigger on version tags (e.g. v1.0.0) and on manual dispatch
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      mayhem_ref:
+        description: 'Mayhem firmware git ref to build against (branch/tag/SHA)'
+        required: false
+        default: 'master'
+
+jobs:
+  build-ppma:
+    name: Build mdk_predator.ppma
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed to create GitHub Releases and upload assets
+
+    steps:
+      - name: Checkout MDK-Predator
+        uses: actions/checkout@v4
+
+      - name: Install ARM cross-compile toolchain and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-arm-none-eabi \
+            binutils-arm-none-eabi \
+            cmake \
+            python3 \
+            python3-pip \
+            git \
+            make \
+            dfu-util
+
+      - name: Determine Mayhem firmware ref
+        id: mayhem_ref
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ref=${{ github.event.inputs.mayhem_ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=master" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Clone Mayhem firmware (shallow)
+        run: |
+          git clone --depth 1 \
+            --branch "${{ steps.mayhem_ref.outputs.ref }}" \
+            https://github.com/portapack-mayhem/mayhem-firmware.git \
+            build/mayhem-firmware
+          cd build/mayhem-firmware
+          git submodule update --init --recursive
+
+      - name: Build libopencm3 (required for ARM headers)
+        run: |
+          cd build/mayhem-firmware/hackrf/firmware/libopencm3
+          make TARGETS=lpc43xx
+          ls include/libopencm3/lpc43xx/m0/nvic.h
+
+      - name: Integrate MDK-Predator into Mayhem firmware tree
+        run: |
+          MAYHEM="build/mayhem-firmware"
+          TARGET="$MAYHEM/firmware/application/external/mdk_predator"
+          mkdir -p "$TARGET"
+
+          # Copy application files
+          cp -r app/*      "$TARGET/"
+          cp -r src        "$TARGET/"
+          cp -r include    "$TARGET/"
+          cp mdk_predator.conf "$TARGET/"
+
+          # Register in external.cmake
+          EXTCMAKE="$MAYHEM/firmware/application/external/external.cmake"
+          cat >> "$EXTCMAKE" << 'EOF'
+
+          # mdk_predator
+          list(APPEND EXTCPPSRC
+              external/mdk_predator/main.cpp
+              external/mdk_predator/mdk_predator_app.cpp
+              external/mdk_predator/src/mdk_predator.c
+              external/mdk_predator/src/automotive/key_fob_analyzer.c
+              external/mdk_predator/src/automotive/rolling_code_tester.c
+              external/mdk_predator/src/wireless/wifi_analyzer.c
+              external/mdk_predator/src/wireless/bluetooth_analyzer.c
+              external/mdk_predator/src/wireless/subghz_analyzer.c
+              external/mdk_predator/src/crypto/crypto_analyzer.c
+          )
+          list(APPEND EXTAPPLIST mdk_predator)
+          EOF
+
+      - name: Configure CMake for PortaPack application
+        working-directory: build/mayhem-firmware
+        run: |
+          mkdir -p build
+          cd build
+          cmake ..
+
+      - name: Build application (ARM cross-compile)
+        working-directory: build/mayhem-firmware/build
+        run: make application
+
+      - name: Locate and copy .ppma output
+        run: |
+          mkdir -p build/portapack
+          # Search common output locations
+          PPMA=$(find build/mayhem-firmware -name "mdk_predator.ppma" 2>/dev/null | head -1)
+          if [ -z "$PPMA" ]; then
+            echo "ERROR: mdk_predator.ppma not found after build"
+            exit 1
+          fi
+          cp "$PPMA" build/portapack/mdk_predator.ppma
+          cp mdk_predator.conf build/portapack/
+          echo "Built: $PPMA"
+          ls -lh build/portapack/
+
+      - name: Upload .ppma as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdk_predator-ppma
+          path: |
+            build/portapack/mdk_predator.ppma
+            build/portapack/mdk_predator.conf
+          retention-days: 30
+
+      # Publish as a GitHub Release only when triggered by a version tag
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: MDK-Predator ${{ github.ref_name }}
+          body: |
+            ## MDK-Predator ${{ github.ref_name }}
+
+            ### Installation
+            1. Download `mdk_predator.ppma` below
+            2. Copy to your PortaPack SD card: `/APPS/mdk_predator.ppma`
+            3. Launch from the **Apps** menu on your PortaPack
+
+            ### Configuration (optional)
+            Copy `mdk_predator.conf` to `/MDK-PREDATOR/config/mdk_predator.conf`
+
+            ### Requirements
+            - PortaPack Mayhem firmware ≥ 1.7.0
+            - HackRF + Mayhem-MDK module
+          files: |
+            build/portapack/mdk_predator.ppma
+            build/portapack/mdk_predator.conf
+          draft: false
+          prerelease: false
