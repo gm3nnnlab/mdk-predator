@@ -9,6 +9,7 @@
 #include <string.h>
 #include "wireless/subghz_analyzer.h"
 #include "input_validation.h"
+#include "common/subghz_signal_validation_utils.h"
 
 /**
  * Initialize SubGHz analyzer
@@ -52,10 +53,7 @@ bool subghz_scan_spectrum(subghz_config_t *config, spectrum_data_t *spectrum) {
  * Capture RF signal
  */
 bool subghz_capture_signal(subghz_config_t *config, rf_signal_t *signal) {
-    if (!validate_not_null(config) || !validate_not_null(signal) || !validate_not_null(signal->i_samples) || !validate_not_null(signal->q_samples)) {
-        return false;
-    }
-    if (validate_buffer_length(signal->sample_count, MAX_SIGNAL_BUFFER_SIZE) != VALIDATION_OK) {
+    if (!validate_not_null(config) || !validate_subghz_iq_signal(signal)) {
         return false;
     }
 
@@ -70,10 +68,7 @@ bool subghz_capture_signal(subghz_config_t *config, rf_signal_t *signal) {
  * Analyze RF signal
  */
 bool subghz_analyze_signal(rf_signal_t *signal, signal_analysis_t *analysis) {
-    if (!validate_not_null(signal) || !validate_not_null(analysis) || !validate_not_null(signal->i_samples) || !validate_not_null(signal->q_samples)) {
-        return false;
-    }
-    if (validate_buffer_length(signal->sample_count, MAX_SIGNAL_BUFFER_SIZE) != VALIDATION_OK) {
+    if (!validate_not_null(analysis) || !validate_subghz_iq_signal(signal)) {
         return false;
     }
 
@@ -89,10 +84,7 @@ bool subghz_analyze_signal(rf_signal_t *signal, signal_analysis_t *analysis) {
  * Decode common protocols
  */
 bool subghz_decode_protocol(rf_signal_t *signal, protocol_data_t *protocol) {
-    if (!validate_not_null(signal) || !validate_not_null(protocol) || !validate_not_null(signal->i_samples) || !validate_not_null(signal->q_samples)) {
-        return false;
-    }
-    if (validate_buffer_length(signal->sample_count, MAX_SIGNAL_BUFFER_SIZE) != VALIDATION_OK) {
+    if (!validate_not_null(protocol) || !validate_subghz_iq_signal(signal)) {
         return false;
     }
 
@@ -132,10 +124,7 @@ bool subghz_record_raw(subghz_config_t *config, uint32_t duration_ms,
  * Replay signal (for testing only)
  */
 bool subghz_replay_signal(subghz_config_t *config, rf_signal_t *signal) {
-    if (!validate_not_null(config) || !validate_not_null(signal) || !validate_not_null(signal->i_samples) || !validate_not_null(signal->q_samples)) {
-        return false;
-    }
-    if (validate_buffer_length(signal->sample_count, MAX_SIGNAL_BUFFER_SIZE) != VALIDATION_OK) {
+    if (!validate_not_null(config) || !validate_subghz_iq_signal(signal)) {
         return false;
     }
 
