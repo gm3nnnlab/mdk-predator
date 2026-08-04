@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include "automotive/key_fob_analyzer.h"
 #include "input_validation.h"
-#include "common/signal_validation_utils.h"
+#include "common/keyfob_signal_validation_utils.h"
 
 /**
  * Initialize the key fob analyzer module

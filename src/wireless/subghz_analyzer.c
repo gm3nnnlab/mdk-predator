@@ -9,7 +9,7 @@
 #include <string.h>
 #include "wireless/subghz_analyzer.h"
 #include "input_validation.h"
-#include "common/signal_validation_utils.h"
+#include "common/subghz_signal_validation_utils.h"
 
 /**
  * Initialize SubGHz analyzer
