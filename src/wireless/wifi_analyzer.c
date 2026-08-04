@@ -10,17 +10,19 @@
 #include <stdio.h>
 #include "wireless/wifi_analyzer.h"
 #include "input_validation.h"
+#include "common/collection_utils.h"
 
 static bool wifi_add_network(wifi_network_t *networks, uint32_t *count, uint32_t max_count, const wifi_network_t *new_network) {
-    if (!validate_array_index(*count, max_count)) {
-        return false;
-    }
-
-    safe_memcpy(&networks[*count], sizeof(wifi_network_t), new_network, sizeof(wifi_network_t));
-    safe_strncpy(networks[*count].ssid, MAX_SSID_LENGTH, new_network->ssid, MAX_SSID_LENGTH - 1);
-
-    (*count)++;
-    return true;
+    return append_named_item(
+        networks,
+        sizeof(wifi_network_t),
+        count,
+        max_count,
+        new_network,
+        offsetof(wifi_network_t, ssid),
+        MAX_SSID_LENGTH,
+        new_network->ssid,
+        MAX_SSID_LENGTH - 1);
 }
 
 /**

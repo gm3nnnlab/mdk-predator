@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include "automotive/key_fob_analyzer.h"
 #include "input_validation.h"
+#include "common/signal_validation_utils.h"
 
 /**
  * Initialize the key fob analyzer module
@@ -56,11 +57,7 @@ bool keyfob_capture_signal(keyfob_config_t *config, signal_data_t *signal) {
  * Analyze captured key fob signal
  */
 bool keyfob_analyze_signal(signal_data_t *signal, keyfob_analysis_t *result) {
-    if (!validate_not_null(signal) || !validate_not_null(result) || !validate_not_null(signal->data)) {
-        return false;
-    }
-
-    if (validate_buffer_length(signal->length, MAX_SIGNAL_BUFFER_SIZE) != VALIDATION_OK) {
+    if (!validate_not_null(result) || !validate_keyfob_signal_payload(signal)) {
         return false;
     }
 
@@ -76,11 +73,7 @@ bool keyfob_analyze_signal(signal_data_t *signal, keyfob_analysis_t *result) {
  * Detect rolling code pattern
  */
 bool keyfob_detect_rolling_code(signal_data_t *signal, rolling_code_info_t *info) {
-    if (!validate_not_null(signal) || !validate_not_null(info) || !validate_not_null(signal->data)) {
-        return false;
-    }
-
-    if (validate_buffer_length(signal->length, MAX_SIGNAL_BUFFER_SIZE) != VALIDATION_OK) {
+    if (!validate_not_null(info) || !validate_keyfob_signal_payload(signal)) {
         return false;
     }
 

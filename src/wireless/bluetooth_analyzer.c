@@ -10,25 +10,32 @@
 #include <stdio.h>
 #include "wireless/bluetooth_analyzer.h"
 #include "input_validation.h"
+#include "common/collection_utils.h"
 
 static bool bluetooth_add_device(bt_device_t *devices, uint32_t *count, uint32_t max_count, const bt_device_t *new_device) {
-    if (!validate_array_index(*count, max_count)) {
-        return false;
-    }
-    safe_memcpy(&devices[*count], sizeof(bt_device_t), new_device, sizeof(bt_device_t));
-    safe_strncpy(devices[*count].name, MAX_NAME_LENGTH, new_device->name, MAX_NAME_LENGTH -1);
-    (*count)++;
-    return true;
+    return append_named_item(
+        devices,
+        sizeof(bt_device_t),
+        count,
+        max_count,
+        new_device,
+        offsetof(bt_device_t, name),
+        MAX_NAME_LENGTH,
+        new_device->name,
+        MAX_NAME_LENGTH - 1);
 }
 
 static bool bluetooth_add_service(bt_service_t *services, uint32_t *count, uint32_t max_count, const bt_service_t *new_service) {
-    if (!validate_array_index(*count, max_count)) {
-        return false;
-    }
-    safe_memcpy(&services[*count], sizeof(bt_service_t), new_service, sizeof(bt_service_t));
-    safe_strncpy(services[*count].name, MAX_NAME_LENGTH, new_service->name, MAX_NAME_LENGTH-1);
-    (*count)++;
-    return true;
+    return append_named_item(
+        services,
+        sizeof(bt_service_t),
+        count,
+        max_count,
+        new_service,
+        offsetof(bt_service_t, name),
+        MAX_NAME_LENGTH,
+        new_service->name,
+        MAX_NAME_LENGTH - 1);
 }
 
 /**
