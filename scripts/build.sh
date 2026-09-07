@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# MDK-Predator Library Build Script for Linux
-# 
+# MDK-Predator Library Build Script for Linux/macOS
+#
 # This script builds the MDK-Predator library for development
 #
 
@@ -77,8 +77,24 @@ EOF
 
 install_dependencies() {
     print_info "Installing build dependencies..."
-    
-    # Detect OS
+
+    # Detect OS (macOS reports "Darwin" and has no /etc/os-release)
+    local kernel
+    kernel="$(uname -s)"
+
+    if [ "$kernel" = "Darwin" ]; then
+        print_info "Detected macOS system"
+        if ! command -v brew &> /dev/null; then
+            print_error "Homebrew not found. Install it from https://brew.sh and re-run."
+            exit 1
+        fi
+        print_info "Installing ARM toolchain and build tools via Homebrew..."
+        brew install --cask gcc-arm-embedded 2>/dev/null || brew install arm-none-eabi-gcc
+        brew install make git
+        print_info "Dependencies installed successfully"
+        return 0
+    fi
+
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS=$ID
@@ -86,7 +102,7 @@ install_dependencies() {
         print_error "Cannot detect operating system"
         exit 1
     fi
-    
+
     case $OS in
         ubuntu|debian)
             print_info "Detected Debian/Ubuntu system"
@@ -117,7 +133,7 @@ install_dependencies() {
             exit 1
             ;;
     esac
-    
+
     print_info "Dependencies installed successfully"
 }
 

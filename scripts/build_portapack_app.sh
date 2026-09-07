@@ -82,7 +82,23 @@ EOF
 install_dependencies() {
     print_info "Installing build dependencies..."
 
-    # Detect OS
+    # Detect OS (macOS reports "Darwin" and has no /etc/os-release)
+    local kernel
+    kernel="$(uname -s)"
+
+    if [ "$kernel" = "Darwin" ]; then
+        print_info "Detected macOS system"
+        if ! command -v brew &> /dev/null; then
+            print_error "Homebrew not found. Install it from https://brew.sh and re-run."
+            exit 1
+        fi
+        print_info "Installing ARM toolchain, CMake, Python via Homebrew..."
+        brew install --cask gcc-arm-embedded 2>/dev/null || brew install arm-none-eabi-gcc
+        brew install cmake python3 git make dfu-util
+        print_info "Dependencies installed successfully"
+        return 0
+    fi
+
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS=$ID

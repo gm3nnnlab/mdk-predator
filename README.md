@@ -118,6 +118,8 @@ chmod +x docker-build.sh  # First time only
 ./scripts/build_portapack_app.sh -i -d
 ```
 
+> **macOS note:** `--install-deps` uses [Homebrew](https://brew.sh) on macOS instead of `apt-get`/`sudo`. Install Homebrew first if you don't already have it.
+
 **Windows (PowerShell as Administrator):**
 ```powershell
 # Install dependencies and download firmware automatically
@@ -163,6 +165,8 @@ make
 # Or use the build script
 ./scripts/build.sh
 ```
+
+> **macOS note:** `--install-deps` uses [Homebrew](https://brew.sh) on macOS instead of `apt-get`/`sudo`. Install Homebrew first if you don't already have it.
 
 **Windows (PowerShell):**
 ```powershell
